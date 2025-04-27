@@ -118,14 +118,14 @@ export const logInUser = async (req, res) => {
             secure: true,
             maxAge: 24 * 60 * 60 * 1000
         }
-        res.cookie('token', token,cookieOptions)
+        res.cookie('token', token, cookieOptions)
         return res.status(201).json({
             success: true,
             token,
-            user:{
-                id:user.id,
-                name:user.name,
-                email:user.email
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email
             },
             message: "User LoggedIn"
         })
@@ -135,5 +135,46 @@ export const logInUser = async (req, res) => {
             success: false,
             message: "LogIn Failed"
         })
+    }
+}
+export const verifyUser = async (req, res) => {
+    const { token } = req.params
+    console.log(token)
+
+    if (!token) {
+        return res.status(400).json({
+            message: "Invalid token"
+        })
+    }
+
+    try {
+        const user = await prisma.userSchema.findFirst({
+            where: { verificationToken: token }
+        })
+        if (!user) {
+            return res.status(404).json({
+                message: "User not Found"
+            })
+        }
+        await prisma.userSchema.update({
+            where: { id: user.id },
+            data: {
+                isVerified: true,
+                verificationToken: null,
+            },
+        });
+        res.status(200).json({
+            message: "User verified successfully",
+            success: true,
+        })
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Internal server error",
+            success: false,
+            error,
+        });
+
+
     }
 }
